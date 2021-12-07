@@ -36,12 +36,16 @@ const userSchema = new mongoose.Schema ({
   googleId: String,
   secret: String
 });
-
+const historySchema = new mongoose.Schema({
+  googleId:String,
+  source :String,
+  count: Number,
+});
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
 
 const User = new mongoose.model("User", userSchema);
-
+const History =new mongoose.model("History",historySchema);
 passport.use(User.createStrategy());
 
 passport.serializeUser(function(user, done) {
@@ -70,7 +74,13 @@ passport.use(new GoogleStrategy({
 ));
 
 app.get("/", function(req, res){
-  res.json({"bad request":"Failed Request"});
+  console.log('heroeroer');
+  
+  // History.findOne({ 'googleId': req.googleId }, function (err, history) {
+  //   if (err) return res.json({request:'fail'});
+  //   console.log(history);
+  // });
+  res.json({"bad request":"Failed in the hub Request"});
 });
 
 app.get("/auth/google",
@@ -81,103 +91,33 @@ app.get("/auth/google/secrets",
   passport.authenticate('google', { failureRedirect: "http://localhost:3001/" }),
   function(req, res) {
     // Successful authentication, redirect to secrets.
-    console.log(req);
-    res.redirect("http://localhost:3001/?googleId="+req.user.googleId);
+    res.redirect("http://localhost:3001/");
   });
 
-app.get("/login", function(req, res){
-  res.json({"bad request":"Failed Request"});
-});
 
-app.get("/register", function(req, res){
-  res.json({"bad request":"Failed Request"});
-});
 
-app.get("/secrets", function(req, res){
-  User.find({"secret": {$ne: null}}, function(err, foundUsers){
-    if (err){
-      console.log(err);
-    } else {
-      if (foundUsers) {
-        res.render("secrets", {usersWithSecrets: foundUsers});
-      }
-    }
-  });
-});
-
-app.get("/submit", function(req, res){
-  if (req.isAuthenticated()){
-    res.render("submit");
-  } else {
-    res.redirect("/login");
-  }
-});
-
-app.post("/submit", function(req, res){
-  const submittedSecret = req.body.secret;
-
-//Once the user is authenticated and their session gets saved, their user details are saved to req.user.
-  // console.log(req.user.id);
-
-  User.findById(req.user.id, function(err, foundUser){
-    if (err) {
-      console.log(err);
-    } else {
-      if (foundUser) {
-        foundUser.secret = submittedSecret;
-        foundUser.save(function(){
-          res.redirect("/secrets");
-        });
-      }
-    }
-  });
+app.post("/postHistory", function(req, res){
+  const googleId = req.body.googleId;
+  const source = req.body.source;
+  History.findOneAndUpdate({googleId : googleId,source:source}, 
+    { $set: { count: count+1 }},function(err,resp){
+      if(!err)console.log(" Filae s");
+      console.log(reps);
+    });
+  return res.json({success:'stgatus'});
 });
 
 app.get("/logout", function(req, res){
-  req.logout();
-  res.redirect("/");
+  console.log('heroeroer');
+  return res.json({request:'pass'});
 });
-
-app.post("/register", function(req, res){
-
-  User.register({username: req.body.username}, req.body.password, function(err, user){
-    if (err) {
-      console.log(err);
-      res.redirect("/register");
-    } else {
-      passport.authenticate("local")(req, res, function(){
-        res.redirect("/secrets");
-      });
-    }
-  });
+app.get("/hero", function(req, res){
+  console.log('heroeroer');
+  return res.json({request:'pass'});
+});
+app.get("/history", function(req, res){
 
 });
-
-app.post("/login", function(req, res){
-
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password
-  });
-
-  req.login(user, function(err){
-    if (err) {
-      console.log(err);
-    } else {
-      passport.authenticate("local")(req, res, function(){
-        res.redirect("/secrets");
-      });
-    }
-  });
-
-});
-
-
-
-
-
-
-
-app.listen(3000, function() {
-  console.log("Server started on port 3000.");
+app.listen(3999, function() {
+  console.log("Server started on port 3999.");
 });
