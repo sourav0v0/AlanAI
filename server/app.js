@@ -27,7 +27,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true});
+mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true,useUnifiedTopology: true});
 mongoose.set("useCreateIndex", true);
 
 const userSchema = new mongoose.Schema ({
@@ -36,12 +36,16 @@ const userSchema = new mongoose.Schema ({
   googleId: String,
   secret: String
 });
-
+const historySchema = new mongoose.Schema({
+  googleId:String,
+  source :String,
+  count: Number,
+});
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
 
 const User = new mongoose.model("User", userSchema);
-
+const History =new mongoose.model("History",historySchema);
 passport.use(User.createStrategy());
 
 passport.serializeUser(function(user, done) {
@@ -70,7 +74,36 @@ passport.use(new GoogleStrategy({
 ));
 
 app.get("/", function(req, res){
-  res.json({"bad request":"Failed Request"});
+  // var  histroy = new History({googleId:'1212121212',source:'CNN',count:10});
+  // histroy.save(function(err,res){
+  //   if(err) console.log(" inder aaya Eroor ");
+  //   console.log(res);
+  // });
+  var b =false;
+  History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
+    if(err)  b=true;;
+    var i = res[0].count;
+    i+=1;
+    History.updateOne({googleId:req.query.googleId , source:req.query.source},{count : i},function(err){
+      if(err)
+       b=true;
+    });
+  });
+  if(b)
+    res.json({"Server Response":" Mongo Error "});
+    res.json({"Server Response":"Success"});
+});
+
+app.post("/", function(req, res){
+  var b =false;
+  History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
+    if(err) console.log(" inder aaya Eroor ");
+    else
+    console.log(res);
+  });
+  if(b)
+    res.json({"Server Response":"Mongo Error"});
+  res.json({"Server Response":"Success"});
 });
 
 app.get("/auth/google",
@@ -81,103 +114,47 @@ app.get("/auth/google/secrets",
   passport.authenticate('google', { failureRedirect: "http://localhost:3001/" }),
   function(req, res) {
     // Successful authentication, redirect to secrets.
-    console.log(req);
-    res.redirect("http://localhost:3001/?googleId="+req.user.googleId);
+    res.redirect("http://localhost:3001/");
   });
 
-app.get("/login", function(req, res){
-  res.json({"bad request":"Failed Request"});
-});
 
-app.get("/register", function(req, res){
-  res.json({"bad request":"Failed Request"});
-});
 
-app.get("/secrets", function(req, res){
-  User.find({"secret": {$ne: null}}, function(err, foundUsers){
-    if (err){
-      console.log(err);
-    } else {
-      if (foundUsers) {
-        res.render("secrets", {usersWithSecrets: foundUsers});
-      }
-    }
-  });
-});
-
-app.get("/submit", function(req, res){
-  if (req.isAuthenticated()){
-    res.render("submit");
-  } else {
-    res.redirect("/login");
-  }
-});
-
-app.post("/submit", function(req, res){
-  const submittedSecret = req.body.secret;
-
-//Once the user is authenticated and their session gets saved, their user details are saved to req.user.
-  // console.log(req.user.id);
-
-  User.findById(req.user.id, function(err, foundUser){
-    if (err) {
-      console.log(err);
-    } else {
-      if (foundUser) {
-        foundUser.secret = submittedSecret;
-        foundUser.save(function(){
-          res.redirect("/secrets");
+app.post("/postHistory", function(req, res){
+  const googleId = req.body.googleId;
+  const source = req.body.source;
+  History.findOne({googleId : googleId,source:source},function(err,history){
+    if(history === null || err){
+      History.updateOne({googleId : googleId,source:source}, 
+        { $set: { count: 1 }},function(err,resp){
+          if(err)console.log(" Filae s");
+          else
+          console.log(resp);
         });
-      }
+    }
+    else{
+      console.log(" inder aaya ");
+      var histroy = new History({googleId:'1212121212',source:'CNN',count:10});
+      history.save(function(err,res){
+        if(err) console.log(" inder aaya Eroor ");
+        console.log(res);
+      });
     }
   });
+  
+  return res.json({success:'stgatus'});
 });
 
 app.get("/logout", function(req, res){
-  req.logout();
-  res.redirect("/");
+  console.log('heroeroer');
+  return res.json({request:'pass'});
 });
-
-app.post("/register", function(req, res){
-
-  User.register({username: req.body.username}, req.body.password, function(err, user){
-    if (err) {
-      console.log(err);
-      res.redirect("/register");
-    } else {
-      passport.authenticate("local")(req, res, function(){
-        res.redirect("/secrets");
-      });
-    }
-  });
+app.get("/hero", function(req, res){
+  console.log('heroeroer');
+  return res.json({request:'pass'});
+});
+app.get("/history", function(req, res){
 
 });
-
-app.post("/login", function(req, res){
-
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password
-  });
-
-  req.login(user, function(err){
-    if (err) {
-      console.log(err);
-    } else {
-      passport.authenticate("local")(req, res, function(){
-        res.redirect("/secrets");
-      });
-    }
-  });
-
-});
-
-
-
-
-
-
-
-app.listen(3000, function() {
-  console.log("Server started on port 3000.");
+app.listen(3999, function() {
+  console.log("Server started on port 3999.");
 });
