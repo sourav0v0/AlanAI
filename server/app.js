@@ -27,7 +27,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true,useUnifiedTopology: true});
+
 mongoose.set("useCreateIndex", true);
 
 const userSchema = new mongoose.Schema ({
@@ -65,7 +65,7 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(accessToken, refreshToken, profile, cb) {
-    console.log(profile);
+    
 
     User.findOrCreate({ googleId: profile.id }, function (err, user) {
       return cb(err, user);
@@ -84,12 +84,11 @@ app.get("/auth/google/secrets",
 });
 
 app.post("/postHistory", function(req, res){
-  console.log(" in here r" );
   var b =false;
   History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
     if(err)  b=true;
     var i = 0;
-    console.log(res);
+    
     if(res == null || res.length === 0 || res === undefined)
     {
   
@@ -123,6 +122,6 @@ app.get("/getHistory", function(req, res){
     res.json({"Server Response":"Mongo Error"});
 });
 
-app.listen(3999, function() {
-  console.log("Server started on port 3999.");
+app.listen(3000, function() {
+  console.log("Listentging on port 3000");
 });
