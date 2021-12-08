@@ -73,39 +73,6 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-app.get("/", function(req, res){
-  // var  histroy = new History({googleId:'1212121212',source:'CNN',count:10});
-  // histroy.save(function(err,res){
-  //   if(err) console.log(" inder aaya Eroor ");
-  //   console.log(res);
-  // });
-  var b =false;
-  History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
-    if(err)  b=true;;
-    var i = res[0].count;
-    i+=1;
-    History.updateOne({googleId:req.query.googleId , source:req.query.source},{count : i},function(err){
-      if(err)
-       b=true;
-    });
-  });
-  if(b)
-    res.json({"Server Response":" Mongo Error "});
-    res.json({"Server Response":"Success"});
-});
-
-app.post("/", function(req, res){
-  var b =false;
-  History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
-    if(err) console.log(" inder aaya Eroor ");
-    else
-    console.log(res);
-  });
-  if(b)
-    res.json({"Server Response":"Mongo Error"});
-  res.json({"Server Response":"Success"});
-});
-
 app.get("/auth/google",
   passport.authenticate('google', { scope: ["profile"] })
 );
@@ -113,48 +80,49 @@ app.get("/auth/google",
 app.get("/auth/google/secrets",
   passport.authenticate('google', { failureRedirect: "http://localhost:3001/" }),
   function(req, res) {
-    // Successful authentication, redirect to secrets.
     res.redirect("http://localhost:3001/");
-  });
-
-
+});
 
 app.post("/postHistory", function(req, res){
-  const googleId = req.body.googleId;
-  const source = req.body.source;
-  History.findOne({googleId : googleId,source:source},function(err,history){
-    if(history === null || err){
-      History.updateOne({googleId : googleId,source:source}, 
-        { $set: { count: 1 }},function(err,resp){
-          if(err)console.log(" Filae s");
-          else
-          console.log(resp);
-        });
-    }
-    else{
-      console.log(" inder aaya ");
-      var histroy = new History({googleId:'1212121212',source:'CNN',count:10});
-      history.save(function(err,res){
-        if(err) console.log(" inder aaya Eroor ");
-        console.log(res);
+  console.log(" in here r" );
+  var b =false;
+  History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
+    if(err)  b=true;
+    var i = 0;
+    console.log(res);
+    if(res == null || res.length === 0 || res === undefined)
+    {
+  
+      var  histroy = new History({googleId:req.query.googleId,source:req.query.source,count:1});
+      histroy.save(function(err,res){
+        if(err) b=true;
       });
     }
+    else{
+    i=res[0].count+1;
+    History.updateOne({googleId:req.query.googleId , source:req.query.source},{count : i},function(err,resp){
+      if(err)
+       b=true;
+    });
+    }
   });
-  
-  return res.json({success:'stgatus'});
+  if(b)
+    res.json({"Server Response":" Mongo Error "});
+  res.json({"Server Response":"Success"});
 });
 
-app.get("/logout", function(req, res){
-  console.log('heroeroer');
-  return res.json({request:'pass'});
+app.get("/getHistory", function(req, res){
+  var b =false;
+  let data = null;
+  History.find({googleId:req.query.googleId}).lean().exec(function (err, users) {
+    if(err) b=true;
+    else
+      res.json(JSON.stringify(users));
+  });
+  if(b)
+    res.json({"Server Response":"Mongo Error"});
 });
-app.get("/hero", function(req, res){
-  console.log('heroeroer');
-  return res.json({request:'pass'});
-});
-app.get("/history", function(req, res){
 
-});
 app.listen(3999, function() {
   console.log("Server started on port 3999.");
 });
