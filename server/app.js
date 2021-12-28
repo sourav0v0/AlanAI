@@ -9,14 +9,16 @@ const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const findOrCreate = require('mongoose-findorcreate');
+const cors = require('cors');
 
 const app = express();
-
+mongoose.connect('mongodb://localhost:27017/userDB',{useNewUrlParser: true,useUnifiedTopology: true});
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+app.use(cors());
 
 app.use(session({
   secret: "Our little secret.",
@@ -65,8 +67,6 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(accessToken, refreshToken, profile, cb) {
-    
-
     User.findOrCreate({ googleId: profile.id }, function (err, user) {
       return cb(err, user);
     });
@@ -80,7 +80,8 @@ app.get("/auth/google",
 app.get("/auth/google/secrets",
   passport.authenticate('google', { failureRedirect: "http://localhost:3001/" }),
   function(req, res) {
-    res.redirect("http://localhost:3001/");
+    console.log(req);
+    res.redirect("http://localhost:3001/?googleId="+req.user.googleId);
 });
 
 app.post("/postHistory", function(req, res){
@@ -112,9 +113,12 @@ app.post("/postHistory", function(req, res){
 
 app.get("/getHistory", function(req, res){
   var b =false;
-  let data = null;
+
   History.find({googleId:req.query.googleId}).lean().exec(function (err, users) {
-    if(err) b=true;
+    if(err) {
+      console.log(err);
+      b=true;
+    }
     else
       res.json(JSON.stringify(users));
   });
