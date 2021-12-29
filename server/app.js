@@ -81,11 +81,14 @@ app.get("/auth/google/secrets",
   passport.authenticate('google', { failureRedirect: "http://localhost:3001/" }),
   function(req, res) {
     console.log(req);
-    res.redirect("http://localhost:3001/?googleId="+req.user.googleId);
+    res.redirect("http://localhost:3001/?page=getStarted&googleId="+req.user.googleId);
 });
 
 app.post("/postHistory", function(req, res){
   var b =false;
+  console.log("--------------------");
+  console.log(req.query);
+  console.log("--------------------");
   History.find({googleId:req.query.googleId , source:req.query.source},function(err,res){
     if(err)  b=true;
     var i = 0;
